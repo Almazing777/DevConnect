@@ -45,6 +45,13 @@ router.post(
   "/",
   passport.authenticate("jwt", { session: false }),
   (req, res) => {
+    const { errors, isValid } = validateProfileInput(req.body);
+
+    //Check Validation
+    if (!isValid) {
+      return res.status(400).json(errors);
+    }
+
     //Get fields
     const profileField = {};
     profileFields.user = req.user.id;
@@ -81,7 +88,14 @@ router.post(
         //Create
 
         //Check if handle exists
-        Profile.findOne({ handle: profileFields.handle });
+        Profile.findOne({ handle: profileFields.handle }).then(profile => {
+          if (profile) {
+            errors.handle = "That Handle Already Exists";
+            res.status(400).json(errors);
+          }
+          //save profile
+          new Profile(profileFields).save().then(profile => res.json(profile));
+        });
       }
     });
   }
